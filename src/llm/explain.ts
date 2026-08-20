@@ -53,6 +53,9 @@ export async function explainRemark(env: LlmEnv, remark: string, rule: Rule): Pr
     }),
     schemaName: "remark_explanation",
     schema: REMARK_SCHEMA,
+    // Reasoning models spend max_tokens on hidden reasoning before the JSON;
+    // 900 truncates the six-field payload mid-string (finish_reason: length).
+    maxTokens: 3000,
   });
   return result ? { ...result, source: "llm" } : canned;
 }
@@ -86,7 +89,7 @@ export async function mapIntent(env: LlmEnv, text: string): Promise<IntentResult
     user: text.slice(0, 500),
     schemaName: "intent_mapping",
     schema: INTENT_SCHEMA,
-    maxTokens: 300,
+    maxTokens: 1000,
   });
   return result ? { ...result, source: "llm" } : { claim_type: "unknown", reason_en: "", source: "unavailable" };
 }
