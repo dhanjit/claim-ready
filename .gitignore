@@ -1,0 +1,18 @@
+# deps
+node_modules/
+
+# env & secrets — never commit; use infisical run / .dev.vars locally
+.env
+.env.*
+.dev.vars
+
+# cloudflare
+.wrangler/
+
+# build
+dist/
+coverage/
+
+# misc
+*.log
+.DS_Store
