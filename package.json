@@ -10,6 +10,7 @@
     "deploy": "npm run build:rules && wrangler deploy"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250510.0",
     "js-yaml": "4.1.0",
     "typescript": "5.6.3",
     "vitest": "2.1.9",

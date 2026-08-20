@@ -17,3 +17,7 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 
 - Rejection taxonomy distilled into `rules/rules.yaml` (10 declarative rules with severity, fix path, public source) and `fixtures/personas.yaml` (8 synthetic personas, every rule covered, clean persona included). Build gate `scripts/build-rules.mjs` + 20 vitest schema tests, all green.
 - Codex CLI is not installed on this machine yet — Codex passes over the codebase are tracked as a repo issue so the mandate is met before submission.
+
+## 2026-08-20 · D2: engine + adapter seam · Claude Code (disclosed non-Codex tool)
+
+- Deterministic engine (`src/engine`): check interpreter for all 8 spec types, pure `scan()` with score/readiness/est-days roll-up. Adapter seam (`src/adapters`): MemberDirectory/OtpService/SubmissionService/Clock interfaces + mocks over persona fixtures; OTP mock honestly mirrors R09 (unlinked mobile → no delivery). 46 tests green (one-per-rule + exact-set per persona + edges).
