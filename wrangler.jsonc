@@ -3,7 +3,12 @@
   "name": "claim-ready",
   "main": "src/worker.ts",
   "compatibility_date": "2025-05-05",
-  "assets": { "directory": "public" }
+  "assets": { "directory": "public" },
+  "routes": [{ "pattern": "claimready.dhanjit.me", "custom_domain": true }],
+  "vars": {
+    "OPENAI_BASE_URL": "https://api.openai.com/v1",
+    "EXPLAIN_MODEL": "gpt-5-mini"
+  }
   // UI assets binding lands in D4; LLM env vars come from .dev.vars locally
   // (see .dev.vars.example) and wrangler secrets at deploy. Never point a
   // deployed Worker at OCP (127.0.0.1).

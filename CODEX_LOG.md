@@ -35,3 +35,8 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 
 - Plain-fetch OpenAI-compatible client (`src/llm/client.ts`): strict json_schema output, 30s timeout, bounded retries honoring Retry-After, null on any failure. Two grounded jobs (`src/llm/explain.ts`): rejection-remark decoder (EN/HI/AS, rephrases engine text only) and intent→claim-type mapper (enum-constrained). Worker routes /api/explain + /api/intent; UI decode pills + intent check. Degradation to engine canned text tested.
 - Verified live in the browser over OCP (claude-sonnet-5 on the Max sub): three-language decode of "NAME NOT MATCHED WITH AADHAAR", and "quit my job, withdraw everything" → Form 19 with mismatch warning. 71 tests green.
+
+## 2026-08-20 · D6 pre-deploy: full E2E pass + UI fixes · Claude Code (disclosed non-Codex tool)
+
+- Complete-journey browser pass on wrangler dev: green arc (Rahul, both fixes → filed → settled day 10 inside norm), red arc (file-anyway → rejected day 12 → "NAME NOT MATCHED WITH AADHAAR" decoded in EN/HI/অসমীয়া over OCP), Devraj's R06 door, Hindi intent → Form 19, Assamese out-of-scope intent → honest unknown.
+- Three UI fixes found by the pass, all in public/app.js: intent-unknown now surfaces the model's reason_en (was a generic "could not map" that threw the explanation away); a/an article on the green-scan summary ("an advance", not "a advance"); zero-amount claims no longer render "of ₹0". 71 tests green after.
