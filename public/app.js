@@ -115,7 +115,7 @@ function renderScan() {
           I've completed this fix <span class="chip mock">simulated</span></label>
       </div>`,
       )
-      .join("") || `<div class="card"><p>All checks green for a ${esc(claimType.label.toLowerCase())} of ₹${claim.amount_requested.toLocaleString("en-IN")}.</p></div>`;
+      .join("") || `<div class="card"><p>All checks green for ${/^[aeiou]/i.test(claimType.label) ? "an" : "a"} ${esc(claimType.label.toLowerCase())}${claim.amount_requested ? ` of ₹${claim.amount_requested.toLocaleString("en-IN")}` : ""}.</p></div>`;
   for (const cb of document.querySelectorAll('#findings input[type="checkbox"]')) {
     cb.addEventListener("change", () => {
       cb.checked ? state.fixed.add(cb.dataset.rule) : state.fixed.delete(cb.dataset.rule);
@@ -158,7 +158,10 @@ async function checkIntent() {
   try {
     const r = await api("/api/intent", { text: $("intent-text").value });
     if (r.source !== "llm" || !r.claimType) {
-      out.innerHTML = `<p class="hint">Could not map that to a claim type — the pre-selected one stands.</p>`;
+      out.innerHTML =
+        r.source === "llm" && r.reason_en
+          ? `<p class="otp-note">${esc(r.reason_en)} <span class="chip">AI suggestion</span><br>The pre-selected claim type below stands.</p>`
+          : `<p class="hint">Could not map that to a claim type — the pre-selected one stands.</p>`;
       return;
     }
     const same = r.claim_type === state.scan.claim.type;
