@@ -1,0 +1,147 @@
+# Claim Ready — synthetic member personas
+# ALL DATA SYNTHETIC AND VISIBLY FAKE: UANs start 9999 (12-digit), Aadhaar held only as a
+# masked display ref, IFSC uses the reserved-looking "TEST" bank code, mobiles are 90000000xx.
+# Never add real identifiers here — hackathon hard rule, see CLAUDE.md.
+# expected_findings drive the one-test-per-rule suite: every rule id must appear at least once.
+
+personas:
+  - id: clean-asha
+    label: "Asha — everything green"
+    story: >
+      Asha Borgohain, 31, Guwahati. One employer, clean KYC. Files a ₹60,000 illness advance
+      (mother's surgery) and it should sail through.
+    expected_findings: []
+    claim: { type: form31_68J, amount_requested: 60000, purpose: "Mother's surgery" }
+    record:
+      uan: { number: "999900000001", name: "Asha Borgohain", dob: "1995-03-14", mobile: "9000000001", aadhaarLinked: true, panLinked: true }
+      serviceHistory:
+        - { establishment: "Brahmaputra Textiles Pvt Ltd", memberId: "GHXYZ99990000000000001", joinDate: "2018-07-02", exitDate: null, exitMarked: false, current: true }
+      kyc:
+        aadhaar: { name: "Asha Borgohain", dob: "1995-03-14", maskedRef: "XXXX XXXX 0001", mobileLinked: true, verified: true }
+        pan: { present: true, name: "Asha Borgohain" }
+        bank: { accountName: "Asha Borgohain", maskedAccount: "XXXX0001", ifsc: "TEST0000001", seeded: true, jointAccount: false }
+      balance: { employeeShare: 210000, employerShare: 64000, pensionShare: 89000, monthlyWage: 15000 }
+
+  - id: name-gap-rahul
+    label: "Rahul — the name that dies in three weeks"
+    story: >
+      Rahul Kr Sharma on the UAN, Rahul Kumar Sharma on Aadhaar, R K Sharma at the bank.
+      This is the demo's old-world persona: files blind, rejected day 12 with
+      "3A ABSENT / NAME NOT MATCHED".
+    expected_findings: [R01_NAME_UAN_AADHAAR, R02_NAME_UAN_BANK]
+    claim: { type: form31_68J, amount_requested: 80000, purpose: "Mother's surgery" }
+    record:
+      uan: { number: "999900000002", name: "Rahul Kr. Sharma", dob: "1992-11-02", mobile: "9000000002", aadhaarLinked: true, panLinked: true }
+      serviceHistory:
+        - { establishment: "Dilli Logistics Co", memberId: "DLCPM99990000000000002", joinDate: "2016-01-11", exitDate: "2021-05-31", exitMarked: true, current: false }
+        - { establishment: "Sundar Warehousing Ltd", memberId: "DLCPM99990000000000012", joinDate: "2021-06-01", exitDate: null, exitMarked: false, current: true }
+      kyc:
+        aadhaar: { name: "Rahul Kumar Sharma", dob: "1992-11-02", maskedRef: "XXXX XXXX 0002", mobileLinked: true, verified: true }
+        pan: { present: true, name: "Rahul Kumar Sharma" }
+        bank: { accountName: "R K Sharma", maskedAccount: "XXXX0002", ifsc: "TEST0000002", seeded: true, jointAccount: false }
+      balance: { employeeShare: 340000, employerShare: 101000, pensionShare: 132000, monthlyWage: 22000 }
+
+  - id: dob-gap-meena
+    label: "Meena — the four-year birthday problem"
+    story: >
+      Meena Devi's UAN says 1988, Aadhaar says 1992 — beyond the 3-year correction tolerance,
+      needs a joint declaration with proof before anything can move.
+    expected_findings: [R03_DOB_GAP]
+    claim: { type: form31_68J, amount_requested: 40000, purpose: "House repair after flood" }
+    record:
+      uan: { number: "999900000003", name: "Meena Devi", dob: "1988-06-20", mobile: "9000000003", aadhaarLinked: true, panLinked: true }
+      serviceHistory:
+        - { establishment: "Kaveri Foods Pvt Ltd", memberId: "BGBNG99990000000000003", joinDate: "2014-04-01", exitDate: null, exitMarked: false, current: true }
+      kyc:
+        aadhaar: { name: "Meena Devi", dob: "1992-06-20", maskedRef: "XXXX XXXX 0003", mobileLinked: true, verified: true }
+        pan: { present: true, name: "Meena Devi" }
+        bank: { accountName: "Meena Devi", maskedAccount: "XXXX0003", ifsc: "TEST0000003", seeded: true, jointAccount: false }
+      balance: { employeeShare: 180000, employerShare: 54000, pensionShare: 76000, monthlyWage: 13000 }
+
+  - id: bank-fail-imran
+    label: "Imran — money with nowhere to land"
+    story: >
+      Imran Ali's only seeded account is a joint account with his brother, and its KYC was
+      never employer-approved. Any settlement bounces at remittance.
+    expected_findings: [R04_BANK_KYC]
+    claim: { type: form31_68J, amount_requested: 50000, purpose: "Sister's wedding" }
+    record:
+      uan: { number: "999900000004", name: "Imran Ali", dob: "1990-01-15", mobile: "9000000004", aadhaarLinked: true, panLinked: true }
+      serviceHistory:
+        - { establishment: "Charminar Auto Components", memberId: "HYHYD99990000000000004", joinDate: "2015-09-14", exitDate: null, exitMarked: false, current: true }
+      kyc:
+        aadhaar: { name: "Imran Ali", dob: "1990-01-15", maskedRef: "XXXX XXXX 0004", mobileLinked: true, verified: true }
+        pan: { present: true, name: "Imran Ali" }
+        bank: { accountName: "Imran Ali", maskedAccount: "XXXX0004", ifsc: "TEST0000004", seeded: false, jointAccount: true }
+      balance: { employeeShare: 260000, employerShare: 78000, pensionShare: 104000, monthlyWage: 18000 }
+
+  - id: exit-missing-priya
+    label: "Priya — ghosted by the old employer"
+    story: >
+      Priya Nair left a startup that shut down; nobody marked her exit. Her final settlement
+      cannot move until the exit date exists — the classic silent blocker.
+    expected_findings: [R05_EXIT_DATE]
+    claim: { type: form19_final, amount_requested: 0, purpose: "Final settlement after job loss" }
+    record:
+      uan: { number: "999900000005", name: "Priya Nair", dob: "1993-08-09", mobile: "9000000005", aadhaarLinked: true, panLinked: true }
+      serviceHistory:
+        - { establishment: "Kochi Marine Exports", memberId: "KRKCH99990000000000005", joinDate: "2017-02-01", exitDate: "2022-10-31", exitMarked: true, current: false }
+        - { establishment: "Zeplyn Tech Pvt Ltd (shut down)", memberId: "KRKCH99990000000000015", joinDate: "2022-11-01", exitDate: null, exitMarked: false, current: false }
+      kyc:
+        aadhaar: { name: "Priya Nair", dob: "1993-08-09", maskedRef: "XXXX XXXX 0005", mobileLinked: true, verified: true }
+        pan: { present: true, name: "Priya Nair" }
+        bank: { accountName: "Priya Nair", maskedAccount: "XXXX0005", ifsc: "TEST0000005", seeded: true, jointAccount: false }
+      balance: { employeeShare: 195000, employerShare: 59000, pensionShare: 81000, monthlyWage: 21000 }
+
+  - id: overlap-vikram
+    label: "Vikram — two jobs on paper, TDS ambush waiting"
+    story: >
+      Vikram Singh's old employer marked his exit three months late, so records show him in two
+      establishments at once. He also never seeded PAN, and has 3.5 years of service — an early
+      settlement will get taxed at the punitive rate.
+    expected_findings: [R07_SERVICE_OVERLAP, R10_PAN_TDS]
+    claim: { type: form19_final, amount_requested: 0, purpose: "Final settlement, moving abroad" }
+    record:
+      uan: { number: "999900000006", name: "Vikram Singh", dob: "1996-12-30", mobile: "9000000006", aadhaarLinked: true, panLinked: false }
+      serviceHistory:
+        - { establishment: "Marwar Minerals Ltd", memberId: "RJJPR99990000000000006", joinDate: "2022-01-10", exitDate: "2024-03-31", exitMarked: true, current: false }
+        - { establishment: "Aravalli Cement Works", memberId: "RJJPR99990000000000016", joinDate: "2024-01-02", exitDate: "2025-07-31", exitMarked: true, current: false }
+      kyc:
+        aadhaar: { name: "Vikram Singh", dob: "1996-12-30", maskedRef: "XXXX XXXX 0006", mobileLinked: true, verified: true }
+        pan: { present: false, name: null }
+        bank: { accountName: "Vikram Singh", maskedAccount: "XXXX0006", ifsc: "TEST0000006", seeded: true, jointAccount: false }
+      balance: { employeeShare: 88000, employerShare: 27000, pensionShare: 36000, monthlyWage: 16000 }
+
+  - id: cap-sunita
+    label: "Sunita — asking too much, and the OTP that will never come"
+    story: >
+      Sunita Kumari needs ₹1.5 lakh for surgery but 68-J caps her at 6 months' wages (₹84,000).
+      Her Aadhaar still carries a dead mobile number, so even a valid claim would die at OTP.
+    expected_findings: [R08_68J_CAP, R09_MOBILE_AADHAAR]
+    claim: { type: form31_68J, amount_requested: 150000, purpose: "Husband's heart surgery" }
+    record:
+      uan: { number: "999900000007", name: "Sunita Kumari", dob: "1987-05-05", mobile: "9000000007", aadhaarLinked: true, panLinked: true }
+      serviceHistory:
+        - { establishment: "Patliputra Garments", memberId: "BRPAT99990000000000007", joinDate: "2012-06-18", exitDate: null, exitMarked: false, current: true }
+      kyc:
+        aadhaar: { name: "Sunita Kumari", dob: "1987-05-05", maskedRef: "XXXX XXXX 0007", mobileLinked: false, verified: true }
+        pan: { present: true, name: "Sunita Kumari" }
+        bank: { accountName: "Sunita Kumari", maskedAccount: "XXXX0007", ifsc: "TEST0000007", seeded: true, jointAccount: false }
+      balance: { employeeShare: 310000, employerShare: 93000, pensionShare: 121000, monthlyWage: 14000 }
+
+  - id: unlinked-devraj
+    label: "Devraj — the journey that ends before it starts"
+    story: >
+      Devraj Oraon never linked Aadhaar to his UAN. The online claim door simply does not open;
+      the fix is a week of linking and verification before anything else matters.
+    expected_findings: [R06_AADHAAR_LINK]
+    claim: { type: form31_68J, amount_requested: 30000, purpose: "Daughter's school fees" }
+    record:
+      uan: { number: "999900000008", name: "Devraj Oraon", dob: "1991-02-27", mobile: "9000000008", aadhaarLinked: false, panLinked: true }
+      serviceHistory:
+        - { establishment: "Chotanagpur Steel Fabricators", memberId: "JHRAN99990000000000008", joinDate: "2016-08-22", exitDate: null, exitMarked: false, current: true }
+      kyc:
+        aadhaar: { name: "Devraj Oraon", dob: "1991-02-27", maskedRef: "XXXX XXXX 0008", mobileLinked: true, verified: false }
+        pan: { present: true, name: "Devraj Oraon" }
+        bank: { accountName: "Devraj Oraon", maskedAccount: "XXXX0008", ifsc: "TEST0000008", seeded: true, jointAccount: false }
+      balance: { employeeShare: 150000, employerShare: 45000, pensionShare: 62000, monthlyWage: 12000 }

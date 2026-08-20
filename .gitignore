@@ -16,3 +16,4 @@ coverage/
 # misc
 *.log
 .DS_Store
+src/generated/
