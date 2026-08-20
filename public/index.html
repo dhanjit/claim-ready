@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claim Ready — know your PF claim will clear, before you file it</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="banner" role="note">INDEPENDENT PROTOTYPE · ALL DATA SYNTHETIC · NOT EPFO / NOT GOVT OF INDIA</div>
+
+<header>
+  <h1>Claim Ready</h1>
+  <p class="tagline">Know your PF claim will clear — <strong>before</strong> you file it.</p>
+</header>
+
+<main id="app">
+
+  <section id="screen-pick">
+    <h2>Choose a demo member</h2>
+    <p class="hint">Each is a synthetic persona seeded with a real, documented rejection reason.</p>
+    <div id="persona-list" class="cards"></div>
+  </section>
+
+  <section id="screen-connect" hidden>
+    <h2>Connect your UAN</h2>
+    <div class="card" id="connect-card"></div>
+    <div id="otp-block"></div>
+  </section>
+
+  <section id="screen-scan" hidden>
+    <h2>Claim health scan</h2>
+    <div id="scan-summary"></div>
+    <div id="findings" class="cards"></div>
+    <div class="actions">
+      <button id="btn-rescan" class="secondary">Re-scan</button>
+      <button id="btn-to-file" class="primary"></button>
+    </div>
+  </section>
+
+  <section id="screen-file" hidden>
+    <h2>File the claim</h2>
+    <div class="card" id="file-card"></div>
+    <div class="actions">
+      <button id="btn-file" class="primary">File this claim</button>
+      <button id="btn-back-scan" class="secondary">Back to scan</button>
+    </div>
+  </section>
+
+  <section id="screen-track" hidden>
+    <h2>Track your claim</h2>
+    <div class="card" id="track-card"></div>
+    <div class="actions demo-controls">
+      <span class="chip">demo clock</span>
+      <button id="btn-ff1" class="secondary">+1 day</button>
+      <button id="btn-ff5" class="secondary">+5 days</button>
+      <button id="btn-restart" class="secondary">Start over</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Reference implementation of a pre-submission validation layer that belongs inside the portal.
+     Every verification here is simulated; every rule is from public sources.
+     <a href="https://github.com/dhanjit/claim-ready">Source</a></p>
+</footer>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

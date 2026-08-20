@@ -63,6 +63,63 @@ export class MockSubmission implements SubmissionService {
   }
 }
 
+/** Fix-loop simulation: what the member's record looks like AFTER completing a
+ *  rule's fix path. This models the real-world fix (joint declaration processed,
+ *  KYC seeded, exit marked), clearly labelled in the UI as simulated. */
+const FIX_PATCHES: Record<string, (record: MemberRecord, claim: Claim) => void> = {
+  R01_NAME_UAN_AADHAAR: (r) => {
+    r.uan.name = r.kyc.aadhaar.name;
+  },
+  R02_NAME_UAN_BANK: (r) => {
+    r.kyc.bank.accountName = r.uan.name;
+  },
+  R03_DOB_GAP: (r) => {
+    r.uan.dob = r.kyc.aadhaar.dob;
+  },
+  R04_BANK_KYC: (r) => {
+    r.kyc.bank.seeded = true;
+    r.kyc.bank.jointAccount = false;
+  },
+  R05_EXIT_DATE: (r) => {
+    for (const e of r.serviceHistory) {
+      if (!e.current && !e.exitMarked) {
+        e.exitMarked = true;
+        e.exitDate = e.exitDate ?? "2026-08-01";
+      }
+    }
+  },
+  R06_AADHAAR_LINK: (r) => {
+    r.uan.aadhaarLinked = true;
+  },
+  R07_SERVICE_OVERLAP: (r) => {
+    const sorted = [...r.serviceHistory].sort((a, b) => Date.parse(a.joinDate) - Date.parse(b.joinDate));
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1];
+      if (prev.exitDate && Date.parse(sorted[i].joinDate) <= Date.parse(prev.exitDate)) {
+        prev.exitDate = new Date(Date.parse(sorted[i].joinDate) - 86_400_000).toISOString().slice(0, 10);
+      }
+    }
+  },
+  R08_68J_CAP: (r, c) => {
+    c.amount_requested = Math.min(6 * r.balance.monthlyWage, r.balance.employeeShare);
+  },
+  R09_MOBILE_AADHAAR: (r) => {
+    r.kyc.aadhaar.mobileLinked = true;
+  },
+  R10_PAN_TDS: (r) => {
+    r.kyc.pan.present = true;
+    r.kyc.pan.name = r.uan.name;
+  },
+};
+
+/** Returns a patched deep copy — fixtures are never mutated. Unknown rule ids are ignored. */
+export function applyFixes(record: MemberRecord, claim: Claim, fixedRuleIds: string[]): { record: MemberRecord; claim: Claim } {
+  const r = structuredClone(record);
+  const c = structuredClone(claim);
+  for (const id of fixedRuleIds) FIX_PATCHES[id]?.(r, c);
+  return { record: r, claim: c };
+}
+
 export function createMockAdapters(epochIso: string): Adapters {
   return {
     directory: new MockDirectory(),

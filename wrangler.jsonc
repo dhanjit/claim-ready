@@ -2,7 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "claim-ready",
   "main": "src/worker.ts",
-  "compatibility_date": "2025-05-05"
+  "compatibility_date": "2025-05-05",
+  "assets": { "directory": "public" }
   // UI assets binding lands in D4; LLM env vars come from .dev.vars locally
   // (see .dev.vars.example) and wrangler secrets at deploy. Never point a
   // deployed Worker at OCP (127.0.0.1).

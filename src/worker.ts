@@ -3,7 +3,8 @@ import rulesJson from "./generated/rules.json";
 import { scan } from "./engine";
 import type { Claim, Rule } from "./engine";
 import { claimStatusAt } from "./engine/lifecycle";
-import { createMockAdapters, getPersona } from "./adapters/mock";
+import { CLAIM_TYPES } from "./engine/claimTypes";
+import { applyFixes, createMockAdapters, getPersona } from "./adapters/mock";
 import { getClaim, putClaim } from "./store";
 
 export interface Env {
@@ -60,8 +61,10 @@ export default {
       const uan = url.searchParams.get("uan") ?? "";
       const persona = getPersona(uan);
       if (!persona) return notFound("UAN");
-      const result = scan(persona.record, persona.claim, rules, adapters.clock.nowIso());
-      return ok({ personaId: persona.id, claim: persona.claim, result });
+      const fixedRules = (url.searchParams.get("fixed") ?? "").split(",").filter(Boolean);
+      const { record, claim } = applyFixes(persona.record, persona.claim, fixedRules);
+      const result = scan(record, claim, rules, adapters.clock.nowIso());
+      return ok({ personaId: persona.id, claim, claimType: CLAIM_TYPES[claim.type], fixedRules, result });
     }
 
     if (pathname === "/api/claims" && method === "POST") {
@@ -70,8 +73,10 @@ export default {
       const persona = getPersona(uan);
       if (!persona) return notFound("UAN");
       const scanSkipped = body?.scanSkipped === true;
-      const claim: Claim = { ...persona.claim, ...(typeof body?.amount_requested === "number" ? { amount_requested: body.amount_requested } : {}) };
-      const result = scan(persona.record, claim, rules, adapters.clock.nowIso());
+      const fixedRules = Array.isArray(body?.fixedRules) ? (body.fixedRules as string[]) : [];
+      const baseClaim: Claim = { ...persona.claim, ...(typeof body?.amount_requested === "number" ? { amount_requested: body.amount_requested } : {}) };
+      const { record, claim } = applyFixes(persona.record, baseClaim, fixedRules);
+      const result = scan(record, claim, rules, adapters.clock.nowIso());
       const { claimId } = await adapters.submission.submit(uan, claim);
       putClaim({
         claimId,
