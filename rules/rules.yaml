@@ -1,0 +1,172 @@
+# Claim Ready — rejection rules v1
+# Sources are public: EPFO circulars/joint-declaration SOP, EPF Scheme 1952 paras,
+# EPFO citizen charter (20-day norm), IT Act 192A. Checks are declarative specs
+# interpreted by the deterministic engine (src/engine). The LLM never touches these.
+#
+# severity: blocker = claim will be rejected | risk = high rejection probability | warning = avoidable loss
+# fix.owner: member | employer | bank
+# applies_to: claim types, or "all"
+
+schema_version: 1
+
+rules:
+  - id: R01_NAME_UAN_AADHAAR
+    title: Name mismatch between UAN and Aadhaar
+    category: identity
+    severity: blocker
+    applies_to: all
+    check: { type: name_match, left: uan.name, right: kyc.aadhaar.name, tolerance: fuzzy_minor }
+    kills: >
+      Aadhaar-based verification fails when the UAN name does not match Aadhaar beyond
+      trivial variation; classic rejection remark "NAME NOT MATCHED".
+    fix:
+      owner: member
+      steps:
+        - File a joint declaration (with employer attestation) to correct the UAN name to the Aadhaar spelling.
+      est_days: 15
+    source: "EPFO joint-declaration SOP (member-detail correction); common rejection remark 'NAME NOT MATCHED'"
+
+  - id: R02_NAME_UAN_BANK
+    title: Name mismatch between UAN and bank account
+    category: identity
+    severity: blocker
+    applies_to: all
+    check: { type: name_match, left: uan.name, right: kyc.bank.accountName, tolerance: fuzzy_minor }
+    kills: >
+      Field office rejects when the bank account holder name differs from the member name —
+      settlement money must go to an account provably the member's.
+    fix:
+      owner: bank
+      steps:
+        - Update the bank account name to match UAN/Aadhaar (bank KYC update), or seed a different account that matches.
+      est_days: 7
+    source: "Common EPFO rejection remark 'NAME DIFFER IN BANK'"
+
+  - id: R03_DOB_GAP
+    title: Date of birth differs between UAN and Aadhaar
+    category: identity
+    severity: blocker
+    applies_to: all
+    check: { type: date_gap, left: uan.dob, right: kyc.aadhaar.dob, max_days: 1095 }
+    kills: >
+      DOB gap beyond the permitted tolerance (3 years, with documentary proof) fails
+      Aadhaar validation and blocks online claims outright.
+    fix:
+      owner: member
+      steps:
+        - File a joint declaration with DOB proof (Aadhaar as reference document) to align the UAN DOB.
+      est_days: 20
+    source: "EPFO circular on DOB correction tolerance vs Aadhaar"
+
+  - id: R04_BANK_KYC
+    title: Bank account not KYC-seeded or is a joint account
+    category: kyc
+    severity: blocker
+    applies_to: all
+    check: { type: bank_kyc_ok }
+    kills: >
+      Unseeded/unverified bank KYC means nowhere to remit; joint accounts (other than with
+      spouse) are rejected for settlement.
+    fix:
+      owner: member
+      steps:
+        - Seed the bank account against the UAN (member portal → KYC), get employer approval.
+        - If the account is joint (non-spouse), seed a single-holder account instead.
+      est_days: 5
+    source: "EPFO KYC seeding requirement; joint-account rejection practice"
+
+  - id: R05_EXIT_DATE
+    title: Exit date not marked by previous employer
+    category: employer
+    severity: blocker
+    applies_to: [form19_final, form10c_pension, transfer]
+    check: { type: exit_marked_latest }
+    kills: >
+      Final settlement and transfer need the previous employment closed; the rejection remark
+      is jargon like "3A ABSENT" or the claim simply cannot be filed.
+    fix:
+      owner: member
+      steps:
+        - Mark your own date of exit on the member portal (allowed 2 months after leaving), or
+        - Escalate to the employer to mark exit; failing that, raise EPFiGMS with joining/leaving proof.
+      est_days: 10
+    source: "Member-portal self exit-marking facility; '3A ABSENT' remark family"
+
+  - id: R06_AADHAAR_LINK
+    title: Aadhaar not linked/verified against UAN
+    category: linkage
+    severity: blocker
+    applies_to: all
+    check: { type: flag_true, path: uan.aadhaarLinked }
+    kills: >
+      Online claims require an Aadhaar-verified UAN; without it the journey dead-ends before filing.
+    fix:
+      owner: member
+      steps:
+        - Link Aadhaar on the member portal / UMANG and wait for employer + UIDAI verification.
+      est_days: 7
+    source: "EPFO online-claim precondition (Aadhaar-seeded UAN)"
+
+  - id: R07_SERVICE_OVERLAP
+    title: Overlapping service periods across establishments
+    category: employer
+    severity: risk
+    applies_to: [form19_final, form10c_pension, transfer]
+    check: { type: no_service_overlap }
+    kills: >
+      Overlapping join/exit dates across member IDs trip scrutiny and commonly bounce
+      settlements/transfers for manual reconciliation.
+    fix:
+      owner: member
+      steps:
+        - Get the incorrect join/exit dates corrected by the respective employer(s) via joint declaration.
+      est_days: 25
+    source: "Field-office scrutiny practice on overlapping service"
+
+  - id: R08_68J_CAP
+    title: Illness advance exceeds the para 68-J ceiling
+    category: eligibility
+    severity: blocker
+    applies_to: [form31_68J]
+    check: { type: amount_cap_68j }
+    kills: >
+      Para 68-J advances are capped at 6 months' basic wages (or the employee share with
+      interest, whichever is less); asking above the cap gets the claim rejected or slashed.
+    fix:
+      owner: member
+      steps:
+        - Reduce the requested amount to within the ceiling shown, or split needs across eligible advance types.
+      est_days: 0
+    source: "EPF Scheme 1952, para 68-J"
+
+  - id: R09_MOBILE_AADHAAR
+    title: Mobile number not linked to Aadhaar
+    category: linkage
+    severity: risk
+    applies_to: all
+    check: { type: flag_true, path: kyc.aadhaar.mobileLinked }
+    kills: >
+      Online filing authenticates with an OTP to the Aadhaar-linked mobile; an unlinked or
+      stale number means the OTP never arrives and filing fails at the last step.
+    fix:
+      owner: member
+      steps:
+        - Update the mobile number against Aadhaar at an Aadhaar Seva Kendra (in-person).
+      est_days: 5
+    source: "Aadhaar OTP e-KYC precondition for online claims"
+
+  - id: R10_PAN_TDS
+    title: PAN missing — TDS will bite on early final settlement
+    category: kyc
+    severity: warning
+    applies_to: [form19_final]
+    check: { type: pan_tds }
+    kills: >
+      Final settlement over ₹50,000 with under 5 years of service attracts TDS — 10% with PAN,
+      punitive rate without. Not a rejection, but an avoidable loss.
+    fix:
+      owner: member
+      steps:
+        - Seed PAN against the UAN before filing (or file Form 15G/15H if eligible).
+      est_days: 3
+    source: "IT Act s.192A TDS on premature PF withdrawal"

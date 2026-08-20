@@ -25,7 +25,10 @@ UI (mobile-first) → Worker API → rules engine (deterministic) → verdict
 ## Stack
 
 - TypeScript on Cloudflare Workers, static assets on the same Worker. Deploy target: `claimready.dhanjit.me` (manual `npx wrangler deploy`).
-- **Deliberate exception to the OpenRouter default:** in-product LLM calls use the OpenAI SDK directly (hackathon is OpenAI-run). Model id still env-configured (`EXPLAIN_MODEL`), never hard-coded.
+- **Deliberate exception to the OpenRouter default:** in-product LLM calls speak the OpenAI-compatible `/v1` protocol via plain `fetch` (no SDK dep). Model id env-configured (`EXPLAIN_MODEL`), never hard-coded.
+- **LLM provider seam** (base-URL swap, `.dev.vars` locally):
+  - Local dev: **OCP** — `OPENAI_BASE_URL=http://127.0.0.1:3456/v1`, `EXPLAIN_MODEL=claude-sonnet-5`, no key needed (Claude Max sub). Run `ensure-ocp` before `npm run dev`. OCP never returns `tool_calls` — use `response_format` json_schema only, which is all this product needs (rules decide, model explains).
+  - Deployed demo/submission: real OpenAI — `OPENAI_BASE_URL=https://api.openai.com/v1`, `EXPLAIN_MODEL=gpt-<current>`, key via wrangler secret. **Never wire OCP into deployed config** — 127.0.0.1 is unreachable from a deployed Worker.
 - No heavyweight frameworks. Keep the dep tree minimal (supply-chain discipline applies).
 
 ## Commands
