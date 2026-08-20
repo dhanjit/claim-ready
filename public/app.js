@@ -140,7 +140,35 @@ function renderFile() {
       result.readiness === "red"
         ? `<p class="otp-note fail"><strong>You are filing against a red scan.</strong> This is the old-world arc: it will be rejected around day 12.</p>`
         : `<p class="otp-note">Scan is ${result.readiness} — this should settle within the 20-day service norm.</p>`
-    }`;
+    }
+    <div class="intent">
+      <p class="hint">Not sure this is the right claim type? Say what you need, in your words:</p>
+      <div class="actions">
+        <input type="text" id="intent-text" style="width:100%;letter-spacing:normal;text-align:left" value="${esc(claim.purpose)}">
+        <button id="btn-intent" class="secondary">Check</button>
+      </div>
+      <div id="intent-out"></div>
+    </div>`;
+  $("btn-intent").addEventListener("click", checkIntent);
+}
+
+async function checkIntent() {
+  const out = $("intent-out");
+  out.innerHTML = `<p class="hint">Thinking…</p>`;
+  try {
+    const r = await api("/api/intent", { text: $("intent-text").value });
+    if (r.source !== "llm" || !r.claimType) {
+      out.innerHTML = `<p class="hint">Could not map that to a claim type — the pre-selected one stands.</p>`;
+      return;
+    }
+    const same = r.claim_type === state.scan.claim.type;
+    out.innerHTML = `<p class="otp-note ${same ? "" : "fail"}">
+      Sounds like: <strong>${esc(r.claimType.label)}</strong> (${esc(r.claimType.form)} · ${esc(r.claimType.para)})
+      <span class="chip">AI suggestion</span><br>${esc(r.reason_en)}
+      ${same ? " — matches what's prepared below." : " — different from the prepared claim; in the full product this would switch the form."}</p>`;
+  } catch {
+    out.innerHTML = `<p class="hint">Suggestion service unavailable.</p>`;
+  }
 }
 
 async function fileClaim() {
@@ -185,10 +213,40 @@ async function renderTrack() {
     ${
       status.remark
         ? `<div class="remark"><p>Official rejection remark:</p><code>${esc(status.remark)}</code>
-           <p class="hint">This is the jargon a real member gets. The scan on this same member showed the fix before filing — go back and run the new-world arc.</p></div>`
+           <p class="hint">This is the jargon a real member gets. The scan on this same member showed the fix before filing — go back and run the new-world arc.</p>
+           <div class="actions"><button id="btn-decode" class="primary">What does this actually mean?</button></div>
+           <div id="decode-out"></div></div>`
         : ""
     }
     ${doneIds.includes("settled") ? `<p class="otp-note"><strong>Settled inside the norm.</strong> Same member, same records — the only difference was catching the defects before filing.</p>` : ""}`;
+  const decodeBtn = $("btn-decode");
+  if (decodeBtn) decodeBtn.addEventListener("click", () => decodeRemark(data));
+}
+
+async function decodeRemark(data) {
+  const out = $("decode-out");
+  out.innerHTML = `<p class="hint">Decoding…</p>`;
+  try {
+    const ex = await api("/api/explain", { ruleId: data.firstBlockerRuleId, remark: data.status.remark });
+    const langs = [
+      ["en", "English"],
+      ...(ex.source === "llm" ? [["hi", "हिंदी"], ["as", "অসমীয়া"]] : []),
+    ];
+    const render = (lang) => {
+      out.querySelector(".decode-body").innerHTML = `
+        <p><strong>What happened:</strong> ${esc(ex[`meaning_${lang}`])}</p>
+        <p><strong>What to do:</strong> ${esc(ex[`action_${lang}`])}</p>`;
+      for (const b of out.querySelectorAll(".lang-pill")) b.classList.toggle("primary", b.dataset.lang === lang);
+    };
+    out.innerHTML = `
+      <div class="actions">${langs.map(([l, label]) => `<button class="lang-pill" data-lang="${l}">${label}</button>`).join("")}
+        <span class="chip">${ex.source === "llm" ? "AI-explained, rule-grounded" : "engine text"}</span></div>
+      <div class="decode-body"></div>`;
+    for (const b of out.querySelectorAll(".lang-pill")) b.addEventListener("click", () => render(b.dataset.lang));
+    render("en");
+  } catch {
+    out.innerHTML = `<p class="hint">Explanation service unavailable — the engine's own text above still stands.</p>`;
+  }
 }
 
 /* ---------- wiring ---------- */

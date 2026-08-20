@@ -6,6 +6,7 @@ import { claimStatusAt } from "./engine/lifecycle";
 import { CLAIM_TYPES } from "./engine/claimTypes";
 import { applyFixes, createMockAdapters, getPersona } from "./adapters/mock";
 import { getClaim, putClaim } from "./store";
+import { explainRemark, mapIntent } from "./llm/explain";
 
 export interface Env {
   OPENAI_BASE_URL?: string;
@@ -34,7 +35,7 @@ async function readBody(request: Request): Promise<Record<string, unknown> | nul
 }
 
 export default {
-  async fetch(request: Request, _env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
     const method = request.method;
@@ -101,8 +102,24 @@ export default {
         claim: stored.claim,
         filedAtIso: stored.filedAtIso,
         scanSkipped: stored.scanSkipped,
+        firstBlockerRuleId: stored.blockersAtFiling[0]?.ruleId ?? null,
         status: claimStatusAt(daysElapsed, stored.blockersAtFiling),
       });
+    }
+
+    if (pathname === "/api/explain" && method === "POST") {
+      const body = await readBody(request);
+      const rule = rules.find((r) => r.id === String(body?.ruleId ?? ""));
+      if (!rule) return notFound("rule");
+      return ok(await explainRemark(env, String(body?.remark ?? ""), rule));
+    }
+
+    if (pathname === "/api/intent" && method === "POST") {
+      const body = await readBody(request);
+      const text = String(body?.text ?? "").trim();
+      if (!text) return json({ error: "text required" }, 400);
+      const intent = await mapIntent(env, text);
+      return ok({ ...intent, claimType: intent.claim_type !== "unknown" ? CLAIM_TYPES[intent.claim_type] : null });
     }
 
     if (pathname === "/api/clock/advance" && method === "POST") {

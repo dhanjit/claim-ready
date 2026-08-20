@@ -30,3 +30,8 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 
 - Mobile-first journey (plain HTML/CSS/JS, zero deps, no webfonts): persona picker → UAN connect with mock OTP (delivery honestly fails for the unlinked-mobile persona) → health scan with fix-it cards → simulated fix loop (per-rule record overlays, re-scan goes green) → intent-prefilled filing with doc list → track view (timeline, holder, plain meaning, SLA bar, prediction, rejection-remark decode hook). Worker serves it as static assets.
 - 63 tests green. Both demo arcs + the OTP-failure arc verified in the running browser UI on a 375px viewport.
+
+## 2026-08-20 · D5: LLM explanation layer · Claude Code (disclosed non-Codex tool)
+
+- Plain-fetch OpenAI-compatible client (`src/llm/client.ts`): strict json_schema output, 30s timeout, bounded retries honoring Retry-After, null on any failure. Two grounded jobs (`src/llm/explain.ts`): rejection-remark decoder (EN/HI/AS, rephrases engine text only) and intent→claim-type mapper (enum-constrained). Worker routes /api/explain + /api/intent; UI decode pills + intent check. Degradation to engine canned text tested.
+- Verified live in the browser over OCP (claude-sonnet-5 on the Max sub): three-language decode of "NAME NOT MATCHED WITH AADHAAR", and "quit my job, withdraw everything" → Form 19 with mismatch warning. 71 tests green.
