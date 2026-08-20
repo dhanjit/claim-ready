@@ -28,7 +28,7 @@ UI (mobile-first) → Worker API → rules engine (deterministic) → verdict
 - **Deliberate exception to the OpenRouter default:** in-product LLM calls speak the OpenAI-compatible `/v1` protocol via plain `fetch` (no SDK dep). Model id env-configured (`EXPLAIN_MODEL`), never hard-coded.
 - **LLM provider seam** (base-URL swap, `.dev.vars` locally):
   - Local dev: **OCP** — `OPENAI_BASE_URL=http://127.0.0.1:3456/v1`, `EXPLAIN_MODEL=claude-sonnet-5`, no key needed (Claude Max sub). Run `ensure-ocp` before `npm run dev`. OCP never returns `tool_calls` — use `response_format` json_schema only, which is all this product needs (rules decide, model explains).
-  - Deployed demo/submission: real OpenAI — `OPENAI_BASE_URL=https://api.openai.com/v1`, `EXPLAIN_MODEL=gpt-<current>`, key via wrangler secret. **Never wire OCP into deployed config** — 127.0.0.1 is unreachable from a deployed Worker.
+  - Deployed demo/submission: OpenRouter — `OPENAI_BASE_URL=https://openrouter.ai/api/v1`, `EXPLAIN_MODEL=openai/gpt-<current>`, OpenRouter key stored as the `OPENAI_API_KEY` wrangler secret (no direct OpenAI key exists in the vault). **Never wire OCP into deployed config** — 127.0.0.1 is unreachable from a deployed Worker.
 - No heavyweight frameworks. Keep the dep tree minimal (supply-chain discipline applies).
 
 ## Commands
