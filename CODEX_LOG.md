@@ -25,3 +25,8 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 ## 2026-08-20 · D3: lifecycle + Worker API · Claude Code (disclosed non-Codex tool)
 
 - Deterministic claim state machine (`src/engine/lifecycle.ts`): 5 states with plain-EN meaning + holder, happy/rejection paths, authentic rejection remarks per rule, 20-day SLA clock with prediction. Worker API (`src/worker.ts`) over mock adapters: personas/otp/scan/claims/clock endpoints. 52 tests green; both demo arcs smoke-tested live on wrangler dev.
+
+## 2026-08-20 · D4: journey UI + fix loop · Claude Code (disclosed non-Codex tool)
+
+- Mobile-first journey (plain HTML/CSS/JS, zero deps, no webfonts): persona picker → UAN connect with mock OTP (delivery honestly fails for the unlinked-mobile persona) → health scan with fix-it cards → simulated fix loop (per-rule record overlays, re-scan goes green) → intent-prefilled filing with doc list → track view (timeline, holder, plain meaning, SLA bar, prediction, rejection-remark decode hook). Worker serves it as static assets.
+- 63 tests green. Both demo arcs + the OTP-failure arc verified in the running browser UI on a 375px viewport.
