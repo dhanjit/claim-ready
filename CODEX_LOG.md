@@ -40,3 +40,8 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 
 - Complete-journey browser pass on wrangler dev: green arc (Rahul, both fixes → filed → settled day 10 inside norm), red arc (file-anyway → rejected day 12 → "NAME NOT MATCHED WITH AADHAAR" decoded in EN/HI/অসমীয়া over OCP), Devraj's R06 door, Hindi intent → Form 19, Assamese out-of-scope intent → honest unknown.
 - Three UI fixes found by the pass, all in public/app.js: intent-unknown now surfaces the model's reason_en (was a generic "could not map" that threw the explanation away); a/an article on the green-scan summary ("an advance", not "a advance"); zero-amount claims no longer render "of ₹0". 71 tests green after.
+
+## 2026-08-20 · D6: deployed · Claude Code (disclosed non-Codex tool)
+
+- Live at claimready.dhanjit.me (Worker + custom domain). LLM via OpenRouter (`openai/gpt-5-mini`) — no direct OpenAI key exists in the vault; the OpenRouter key rides the `OPENAI_API_KEY` wrangler secret and the client is provider-agnostic anyway.
+- Deployed decode silently degraded to canned EN: reasoning models spend `max_tokens` on hidden reasoning, so 900 truncated the six-field JSON (`finish_reason: length`). Reproduced directly against OpenRouter, sized budgets (explain 3000, intent 1000), redeployed, verified live twice — trilingual decode `source=llm`, Devanagari + Bengali-Assamese scripts populated.
