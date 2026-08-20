@@ -21,3 +21,7 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 ## 2026-08-20 · D2: engine + adapter seam · Claude Code (disclosed non-Codex tool)
 
 - Deterministic engine (`src/engine`): check interpreter for all 8 spec types, pure `scan()` with score/readiness/est-days roll-up. Adapter seam (`src/adapters`): MemberDirectory/OtpService/SubmissionService/Clock interfaces + mocks over persona fixtures; OTP mock honestly mirrors R09 (unlinked mobile → no delivery). 46 tests green (one-per-rule + exact-set per persona + edges).
+
+## 2026-08-20 · D3: lifecycle + Worker API · Claude Code (disclosed non-Codex tool)
+
+- Deterministic claim state machine (`src/engine/lifecycle.ts`): 5 states with plain-EN meaning + holder, happy/rejection paths, authentic rejection remarks per rule, 20-day SLA clock with prediction. Worker API (`src/worker.ts`) over mock adapters: personas/otp/scan/claims/clock endpoints. 52 tests green; both demo arcs smoke-tested live on wrangler dev.

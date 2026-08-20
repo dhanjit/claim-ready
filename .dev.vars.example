@@ -1,0 +1,10 @@
+# Copy to .dev.vars (gitignored). Local dev talks to OCP — the Claude Max sub as
+# an OpenAI-compatible endpoint. Run `ensure-ocp` first.
+OPENAI_BASE_URL=http://127.0.0.1:3456/v1
+OPENAI_API_KEY=unused-for-ocp
+EXPLAIN_MODEL=claude-sonnet-5
+
+# Submission/deployed config uses the real OpenAI endpoint instead:
+# OPENAI_BASE_URL=https://api.openai.com/v1
+# OPENAI_API_KEY=<wrangler secret>
+# EXPLAIN_MODEL=<current gpt model>
