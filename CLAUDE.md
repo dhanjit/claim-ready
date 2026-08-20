@@ -59,3 +59,7 @@ npm run deploy   # wrangler deploy
 ## Release
 
 Push to `master` → GitHub Actions creates a date-tagged release with generated notes (`.github/workflows/release.yml`). Master is protected; work lands via PR.
+
+## Windows dev-server footgun
+
+`wrangler dev` supervises workerd and **respawns it if you kill only the child**. Stop the stack with a tree kill of the top process (`taskkill /PID <npx-or-npm pid> /T /F`) or via the Claude preview tooling — never a plain single-PID kill, and never leave it running from a background shell.
