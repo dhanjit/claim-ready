@@ -16,7 +16,16 @@ export function scan(record: MemberRecord, claim: Claim, rules: Rule[], nowIso: 
   const findings: Finding[] = [];
   for (const rule of rules) {
     if (!ruleApplies(rule, claim)) continue;
-    const outcome = runCheck(rule.check, record, claim, nowIso);
+    // A malformed or partial record must not take down the whole health scan:
+    // one absent nested block used to throw past scan() and the user saw a crash
+    // instead of the defects that had already been found. An unevaluable check
+    // reports as unmet — never as passed.
+    let outcome;
+    try {
+      outcome = runCheck(rule.check, record, claim, nowIso);
+    } catch {
+      outcome = { pass: false, details: { unreadable: true } };
+    }
     if (!outcome.pass) {
       findings.push({
         ruleId: rule.id,

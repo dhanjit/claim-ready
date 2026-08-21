@@ -82,14 +82,19 @@ const FIX_PATCHES: Record<string, (record: MemberRecord, claim: Claim) => void> 
   },
   R05_EXIT_DATE: (r) => {
     for (const e of r.serviceHistory) {
-      if (!e.current && !e.exitMarked) {
+      // An exit counts as marked only if a date exists, so a row flagged marked
+      // with a null date needs the date seeded too — otherwise it stays unfixable.
+      if (!e.current && (!e.exitMarked || !e.exitDate)) {
         e.exitMarked = true;
         e.exitDate = e.exitDate ?? "2026-08-01";
       }
     }
   },
   R06_AADHAAR_LINK: (r) => {
+    // The rule's fix path is "link, then wait for employer + UIDAI verification",
+    // so the completed fix seeds both facts. Linking alone leaves the claim door shut.
     r.uan.aadhaarLinked = true;
+    r.kyc.aadhaar.verified = true;
   },
   R07_SERVICE_OVERLAP: (r) => {
     const sorted = [...r.serviceHistory].sort((a, b) => Date.parse(a.joinDate) - Date.parse(b.joinDate));
