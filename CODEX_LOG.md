@@ -61,3 +61,9 @@ Full-disclosure policy: every AI tool touching this repo gets logged here, not j
 - **So the split is: Codex located the defects, Claude Code implemented the fixes and the regression tests.** Recorded plainly rather than blurred into "built with Codex" — the honesty ledger in the README is the whole argument of this entry, and it would be worth nothing if this line were fudged.
 - Two of Codex's claims were **verified empirically before being acted on** rather than taken on trust: `Date.parse("1990-02-31")` does return 1990-03-03, and a five-calendar-year span computes to 59.99 months with one leap day but 60.02 with two. Both reproduced in node first.
 - Result: 11 new regression tests, each watched failing before the fix. Suite 71 → 82, all green.
+
+## 2026-08-21 · D7: pre-submission verification + stateless claim token · Claude Code (disclosed non-Codex tool)
+
+- Wrote and ran a 53-check verification suite against the **deployed** demo (reachability, per-persona scans, fix-loop-to-green, synthetic-data guarantee, OTP honesty, live LLM output in all three languages, both demo arcs, isolate consistency, page weight).
+- It caught a submission-critical bug that every prior local test missed: claims and the demo clock lived in module scope, which on Cloudflare is per-isolate state. Filed claims 404'd on read and the clock differed across isolates. Fixed by encoding the claim into its own id and moving fast-forward to a client-side day offset — see brain issue and claim-ready#26, plus the DEVLOG entry.
+- Codex was not used for this pass; it is Claude Code work and recorded as such.

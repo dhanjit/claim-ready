@@ -5,7 +5,7 @@ import type { Claim, Rule } from "./engine";
 import { claimStatusAt } from "./engine/lifecycle";
 import { CLAIM_TYPES } from "./engine/claimTypes";
 import { applyFixes, createMockAdapters, getPersona } from "./adapters/mock";
-import { getClaim, putClaim } from "./store";
+import { decodeClaimToken, encodeClaimToken } from "./claimToken";
 import { explainRemark, mapIntent } from "./llm/explain";
 
 export interface Env {
@@ -15,10 +15,31 @@ export interface Env {
 }
 
 const rules = (rulesJson as { rules: Rule[] }).rules;
-// Demo epoch: the simulated "today". One adapter set per isolate, like the store.
-const adapters = createMockAdapters("2026-08-20T00:00:00Z");
+const ruleIds = new Set(rules.map((r) => r.id));
+// Demo epoch: the simulated "today". A CONSTANT, never advanced — see #26.
+// Fast-forward is a client-supplied `day` offset, so every isolate answers
+// identically and a reload reproduces the same state.
+const DEMO_EPOCH = "2026-08-20T00:00:00.000Z";
+const adapters = createMockAdapters(DEMO_EPOCH);
 
-const DAY_MS = 86_400_000;
+const MAX_DEMO_DAYS = 365;
+
+/** Blockers as Findings, rebuilt from their rule ids — the lifecycle needs the
+ *  count and the first rule id, both carried in the claim token. */
+const blockersFromIds = (ids: string[]) =>
+  ids
+    .map((id) => rules.find((r) => r.id === id))
+    .filter((r): r is Rule => Boolean(r))
+    .map((r) => ({
+      ruleId: r.id,
+      title: r.title,
+      category: r.category,
+      severity: r.severity,
+      kills: r.kills,
+      fix: r.fix,
+      source: r.source,
+      details: {},
+    }));
 
 const json = (data: unknown, status = 400): Response =>
   new Response(JSON.stringify(data, null, 2), { status, headers: { "content-type": "application/json" } });
@@ -40,7 +61,7 @@ export default {
     const { pathname } = url;
     const method = request.method;
 
-    if (pathname === "/api/health") return ok({ ok: true, mock: true, now: adapters.clock.nowIso() });
+    if (pathname === "/api/health") return ok({ ok: true, mock: true, now: DEMO_EPOCH });
 
     if (pathname === "/api/personas" && method === "GET") {
       return ok({ personas: await adapters.directory.listPersonas() });
@@ -64,7 +85,7 @@ export default {
       if (!persona) return notFound("UAN");
       const fixedRules = (url.searchParams.get("fixed") ?? "").split(",").filter(Boolean);
       const { record, claim } = applyFixes(persona.record, persona.claim, fixedRules);
-      const result = scan(record, claim, rules, adapters.clock.nowIso());
+      const result = scan(record, claim, rules, DEMO_EPOCH);
       return ok({ personaId: persona.id, claim, claimType: CLAIM_TYPES[claim.type], fixedRules, result });
     }
 
@@ -77,33 +98,44 @@ export default {
       const fixedRules = Array.isArray(body?.fixedRules) ? (body.fixedRules as string[]) : [];
       const baseClaim: Claim = { ...persona.claim, ...(typeof body?.amount_requested === "number" ? { amount_requested: body.amount_requested } : {}) };
       const { record, claim } = applyFixes(persona.record, baseClaim, fixedRules);
-      const result = scan(record, claim, rules, adapters.clock.nowIso());
-      const { claimId } = await adapters.submission.submit(uan, claim);
-      putClaim({
-        claimId,
+      const result = scan(record, claim, rules, DEMO_EPOCH);
+      // Still goes through the submission seam — that adapter is the integration
+      // point a real EPFO deployment would implement.
+      const { claimId: submissionRef } = await adapters.submission.submit(uan, claim);
+      // The claim id IS the claim — no server-side store to fall out of sync.
+      const claimId = encodeClaimToken({
         uan,
         personaId: persona.id,
         claim,
-        filedAtIso: adapters.clock.nowIso(),
-        blockersAtFiling: result.findings.filter((f) => f.severity === "blocker"),
+        filedAtIso: DEMO_EPOCH,
+        blockerRuleIds: result.findings.filter((f) => f.severity === "blocker").map((f) => f.ruleId),
         scanSkipped,
+        submissionRef,
       });
-      return ok({ claimId });
+      return ok({ claimId, submissionRef });
     }
 
     const claimMatch = pathname.match(/^\/api\/claims\/([\w-]+)$/);
     if (claimMatch && method === "GET") {
-      const stored = getClaim(claimMatch[1]);
-      if (!stored) return notFound("claim");
-      const daysElapsed = Math.floor((Date.parse(adapters.clock.nowIso()) - Date.parse(stored.filedAtIso)) / DAY_MS);
+      const filed = decodeClaimToken(claimMatch[1], {
+        isKnownUan: (u) => getPersona(u) !== null,
+        isKnownRuleId: (id) => ruleIds.has(id),
+      });
+      if (!filed) return notFound("claim");
+      // Fast-forward is the caller's, not the server's: no shared clock to race on.
+      const dayParam = Number(url.searchParams.get("day") ?? "0");
+      if (!Number.isFinite(dayParam) || dayParam < 0 || dayParam > MAX_DEMO_DAYS) return json({ error: `day must be 0–${MAX_DEMO_DAYS}` }, 400);
+      const daysElapsed = Math.floor(dayParam);
+      const blockers = blockersFromIds(filed.blockerRuleIds);
       return ok({
-        claimId: stored.claimId,
-        personaId: stored.personaId,
-        claim: stored.claim,
-        filedAtIso: stored.filedAtIso,
-        scanSkipped: stored.scanSkipped,
-        firstBlockerRuleId: stored.blockersAtFiling[0]?.ruleId ?? null,
-        status: claimStatusAt(daysElapsed, stored.blockersAtFiling),
+        claimId: claimMatch[1],
+        submissionRef: filed.submissionRef,
+        personaId: filed.personaId,
+        claim: filed.claim,
+        filedAtIso: filed.filedAtIso,
+        scanSkipped: filed.scanSkipped,
+        firstBlockerRuleId: filed.blockerRuleIds[0] ?? null,
+        status: claimStatusAt(daysElapsed, blockers),
       });
     }
 
@@ -122,13 +154,9 @@ export default {
       return ok({ ...intent, claimType: intent.claim_type !== "unknown" ? CLAIM_TYPES[intent.claim_type] : null });
     }
 
-    if (pathname === "/api/clock/advance" && method === "POST") {
-      const body = await readBody(request);
-      const days = Number(body?.days);
-      if (!Number.isFinite(days) || days <= 0 || days > 365) return json({ error: "days must be 1–365" }, 400);
-      adapters.clock.advanceDays(days);
-      return ok({ now: adapters.clock.nowIso() });
-    }
+    // /api/clock/advance is gone: fast-forward is now a client-held `day` offset
+    // passed to /api/claims/:token. A server clock was shared across every user
+    // hitting the same isolate, and differed between isolates — see #26.
 
     return notFound("route");
   },

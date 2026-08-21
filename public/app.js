@@ -7,7 +7,8 @@ const state = {
   persona: null, // {uan, id, label, story}
   fixed: new Set(), // rule ids marked fixed (simulated)
   scan: null, // last /api/scan payload
-  claimId: null,
+  claimId: null, // self-contained claim token — the claim IS the id
+  dayOffset: 0, // simulated days since filing, held here not on the server
 };
 
 function show(name) {
@@ -181,13 +182,14 @@ async function fileClaim() {
     scanSkipped: state.scan.result.readiness === "red",
   });
   state.claimId = claimId;
+  state.dayOffset = 0;
   await renderTrack();
   show("track");
 }
 
 /* ---------- track ---------- */
 async function renderTrack() {
-  const data = await api(`/api/claims/${state.claimId}`);
+  const data = await api(`/api/claims/${state.claimId}?day=${state.dayOffset}`);
   const { status } = data;
   const doneIds = status.history.map((h) => h.id);
   const rows = status.history
@@ -207,7 +209,7 @@ async function renderTrack() {
     : "";
   const pct = Math.min(100, Math.round((status.sla.daysElapsed / status.sla.totalDays) * 100));
   $("track-card").innerHTML = `
-    <p>Claim <code>${esc(data.claimId)}</code> · filed ${data.filedAtIso.slice(0, 10)} <span class="chip mock">simulated</span></p>
+    <p>Claim <code>${esc(data.submissionRef)}</code> · filed ${data.filedAtIso.slice(0, 10)} <span class="chip mock">simulated</span></p>
     <div class="sla ${status.sla.breached ? "late" : ""}">
       <div class="bar"><div style="width:${pct}%"></div></div>
       <p>Day ${status.sla.daysElapsed} of the ${status.sla.totalDays}-day service norm${status.sla.breached ? " — norm breached" : ""}</p>
@@ -260,12 +262,12 @@ $("btn-to-file").addEventListener("click", () => {
 });
 $("btn-back-scan").addEventListener("click", () => show("scan"));
 $("btn-file").addEventListener("click", fileClaim);
-$("btn-ff1").addEventListener("click", async () => {
-  await api("/api/clock/advance", { days: 1 });
+$("btn-ff1").addEventListener("click", () => {
+  state.dayOffset += 1;
   renderTrack();
 });
-$("btn-ff5").addEventListener("click", async () => {
-  await api("/api/clock/advance", { days: 5 });
+$("btn-ff5").addEventListener("click", () => {
+  state.dayOffset += 5;
   renderTrack();
 });
 $("btn-restart").addEventListener("click", () => {
@@ -273,6 +275,7 @@ $("btn-restart").addEventListener("click", () => {
   state.fixed = new Set();
   state.scan = null;
   state.claimId = null;
+  state.dayOffset = 0;
   show("pick");
 });
 
