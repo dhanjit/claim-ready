@@ -37,8 +37,8 @@ Honesty about mocking is a design principle here, not a disclaimer.
 ## Stack
 
 - TypeScript on Cloudflare Workers (static assets + API)
-- OpenAI SDK (in-product LLM; model set via env var)
-- Built with OpenAI Codex as the primary coding tool — usage documented in [CODEX_LOG.md](CODEX_LOG.md)
+- In-product LLM over the OpenAI-compatible `/v1` protocol via plain `fetch` — no SDK dependency, model id set by env var (`EXPLAIN_MODEL`). The deployed demo runs `openai/gpt-5-mini` through OpenRouter; local dev points the same client at a different base URL.
+- **How this was built:** the implementation was written with Claude Code. OpenAI Codex ran the adversarial correctness review of the rules engine — two independent passes that found six defects in the scored correctness core, since fixed. Neither claim is rounded up: the full per-day split is in [CODEX_LOG.md](CODEX_LOG.md).
 
 ## Development
 
@@ -48,8 +48,6 @@ npm run dev      # wrangler dev
 npm test         # rules engine: one test per rule
 npm run deploy   # wrangler deploy
 ```
-
-(Scaffold pending — commands land with the first build commit.)
 
 ## Repo conventions
 
