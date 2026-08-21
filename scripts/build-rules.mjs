@@ -6,7 +6,7 @@ import yaml from "js-yaml";
 const SEVERITIES = new Set(["blocker", "risk", "warning"]);
 const CHECK_TYPES = new Set([
   "name_match", "date_gap", "bank_kyc_ok", "exit_marked_latest",
-  "flag_true", "no_service_overlap", "amount_cap_68j", "pan_tds",
+  "flag_true", "all_true", "no_service_overlap", "amount_cap_68j", "pan_tds",
 ]);
 const CLAIM_TYPES = new Set(["form31_68J", "form19_final", "form10c_pension", "transfer"]);
 

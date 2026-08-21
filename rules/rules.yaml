@@ -97,7 +97,7 @@ rules:
     category: linkage
     severity: blocker
     applies_to: all
-    check: { type: flag_true, path: uan.aadhaarLinked }
+    check: { type: all_true, paths: [uan.aadhaarLinked, kyc.aadhaar.verified] }
     kills: >
       Online claims require an Aadhaar-verified UAN; without it the journey dead-ends before filing.
     fix:

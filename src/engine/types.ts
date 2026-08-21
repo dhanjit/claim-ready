@@ -41,6 +41,7 @@ export interface CheckSpec {
     | "bank_kyc_ok"
     | "exit_marked_latest"
     | "flag_true"
+    | "all_true"
     | "no_service_overlap"
     | "amount_cap_68j"
     | "pan_tds";
@@ -49,6 +50,7 @@ export interface CheckSpec {
   tolerance?: "fuzzy_minor";
   max_days?: number;
   path?: string;
+  paths?: string[];
 }
 
 export interface Rule {
