@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "claim-ready",
+  "workers_dev": false,
   "main": "src/worker.ts",
   "compatibility_date": "2025-05-05",
   "assets": { "directory": "public" },
