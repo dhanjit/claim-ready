@@ -1,5 +1,11 @@
 # Claim Ready
 
+> **Dead project, archived 2026-09-11.** Never submitted to the hackathon it was built
+> for; the deployment is torn down and nothing here runs any more. It cannot work as a
+> product — the scan needs records only EPFO holds (see "Why a third party can't ship
+> this" below), and that was true from day 0. Kept public as a reference implementation
+> and a worked argument. Post-mortem in [DEVLOG.md](DEVLOG.md).
+
 > Know your PF claim will clear — **before** you file it.
 
 **Independent prototype.** Not affiliated with, endorsed by, or connected to EPFO, the Ministry of Labour & Employment, or the Government of India. All identity, verification, and government-system data in this project is mock/synthetic. Built for the [Build What Moves India](https://buildwhatmovesindia.com/) hackathon (submission Aug 27, 2026).
